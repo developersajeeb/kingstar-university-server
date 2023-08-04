@@ -41,7 +41,19 @@ async function run() {
             res.send(result)
         })
 
-        //TODO email query
+        //Get Single User With Email Query /user?email=user@example.com
+        app.get('/user', async (req, res) => {
+            const userEmail = req.query.email;
+            const query = { email: userEmail };
+            const result = await usersCollections.findOne(query);
+            res.send(result);
+        });
+
+        //Get Users
+        app.get('/users', async(req, res) => {
+            const result = await usersCollections.find().toArray();
+            res.send(result)
+        })
 
         //Add University
         app.post('/university', async (req, res) => {
@@ -56,32 +68,42 @@ async function run() {
             res.send(cursor)
         })
 
-        // Get User
-        app.get('/user/:id', async (req, res) => {
-            const id = req.params.id;
-            const query = { _id: new ObjectId(id) };
-            const result = await usersCollections.findOne(query);
+        // Update user info
+        app.put('/user/:email', async (req, res) => {
+            const email = req.params.email;
+            const filter = { email: email }
+            const options = { upsert: true };
+            const updatedUser = req.body;
+            const newUser = {
+                $set: {
+                    name: updatedUser.name,
+                    photo: updatedUser.photo,
+                    email: updatedUser.email,
+                    phone: updatedUser.phone,
+                    university: updatedUser.university,
+                    country: updatedUser.country,
+                    city: updatedUser.city,
+                    postal: updatedUser.postal,
+                    bio: updatedUser.bio
+                }
+            }
+            const result = await usersCollections.updateOne(filter, newUser, options);
             res.send(result)
         })
 
-        // Update user info
-        app.put('/user/:id', async (req, res) => {
-            const id = req.params.id;
-            const filter = { _id: new ObjectId(id) }
-            const options = { upsert: true };
-            const updatedUser = req.body;
-            const newClass = {
-                $set: {
-                    className: updatedUser.className,
-                    classImg: updatedUser.classImg,
-                    availableSeats: updatedUser.availableSeats,
-                    price: updatedUser.price,
-                    description: updatedUser.description,
-                }
+        // Email query for admin
+        app.get('/user/admin/:email', async (req, res) => {
+            const email = req.params.email;
+            const user = await usersCollections.findOne({ email: email });
+          
+            if (!user) {
+              res.send({ admin: false, message: 'User not found' });
+              return;
             }
-            const result = await classCollation.updateOne(filter, newClass, options);
-            res.send(result)
-        })
+            const result = { admin: user.role === 'admin' };
+            res.send(result);
+          });
+          
 
         // Send a ping to confirm a successful connection
         await client.db("admin").command({ ping: 1 });
