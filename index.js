@@ -50,7 +50,7 @@ async function run() {
         });
 
         //Get Users
-        app.get('/users', async(req, res) => {
+        app.get('/users', async (req, res) => {
             const result = await usersCollections.find().toArray();
             res.send(result)
         })
@@ -66,6 +66,14 @@ async function run() {
         app.get('/university', async (req, res) => {
             const cursor = await universityCollections.find().toArray();
             res.send(cursor)
+        })
+
+        //Get Single University
+        app.get('/university/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) }
+            const result = await universityCollections.findOne(query);
+            res.send(result);
         })
 
         // Update user info
@@ -95,15 +103,15 @@ async function run() {
         app.get('/user/admin/:email', async (req, res) => {
             const email = req.params.email;
             const user = await usersCollections.findOne({ email: email });
-          
+
             if (!user) {
-              res.send({ admin: false, message: 'User not found' });
-              return;
+                res.send({ admin: false, message: 'User not found' });
+                return;
             }
             const result = { admin: user.role === 'admin' };
             res.send(result);
-          });
-          
+        });
+
 
         // Send a ping to confirm a successful connection
         await client.db("admin").command({ ping: 1 });
