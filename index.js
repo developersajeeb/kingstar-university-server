@@ -28,6 +28,7 @@ async function run() {
 
         const usersCollections = client.db('kingStarUniversity').collection('users');
         const universityCollections = client.db('kingStarUniversity').collection('university');
+        const userFeedback = client.db('kingStarUniversity').collection('feedback');
 
         // Add New User
         app.post('/users', async (req, res) => {
@@ -75,6 +76,84 @@ async function run() {
             const result = await universityCollections.findOne(query);
             res.send(result);
         })
+
+        //Make University top & normal
+        app.patch('/university/:id', async (req, res) => {
+            try {
+                const id = req.params.id;
+                const filter = { _id: new ObjectId(id) };
+                const existingUniversity = await universityCollections.findOne(filter);
+
+                if (!existingUniversity) {
+                    return res.rank(404).send('University not found');
+                }
+
+                const newRank = existingUniversity.rank === 'top' ? 'normal' : 'top';
+                const updateDoc = {
+                    $set: {
+                        rank: newRank
+                    },
+                };
+
+                const result = await universityCollections.updateOne(filter, updateDoc);
+                res.send(result);
+            } catch (error) {
+                console.error(error);
+                res.rank(500).send('Server error');
+            }
+        });
+
+        // Get rank specific University
+        app.get('/top-university/:rank', async (req, res) => {
+            const result = await universityCollections.find({rank: req.params.rank}).toArray()
+            res.send(result)
+        })
+
+        //Add Feedback
+        app.post('/feedback', async (req, res) => {
+            const newFeedback = req.body;
+            const result = await userFeedback.insertOne(newFeedback);
+            res.send(result);
+        })
+
+        //Get Feedback
+        app.get('/feedback', async (req, res) => {
+            const result = await userFeedback.find().toArray();
+            res.send(result)
+        })
+
+        //Make Feedback status pending & approval
+        app.patch('/feedback/:id', async (req, res) => {
+            try {
+                const id = req.params.id;
+                const filter = { _id: new ObjectId(id) };
+                const existingFeedback = await userFeedback.findOne(filter);
+
+                if (!existingFeedback) {
+                    return res.status(404).send('Feedback not found');
+                }
+
+                const newStatus = existingFeedback.status === 'approval' ? 'pending' : 'approval';
+                const updateDoc = {
+                    $set: {
+                        status: newStatus
+                    },
+                };
+
+                const result = await userFeedback.updateOne(filter, updateDoc);
+                res.send(result);
+            } catch (error) {
+                console.error(error);
+                res.status(500).send('Server error');
+            }
+        });
+
+        // Get status specific feedback
+        app.get('/feedback/:status', async (req, res) => {
+            const result = await userFeedback.find({status: req.params.status}).toArray()
+            res.send(result)
+        })
+
 
         // Update user info
         app.put('/user/:email', async (req, res) => {
